@@ -26,6 +26,33 @@ func setupErrTestingData() {
 	intVal := 1
 	intPtr := &intVal
 	errDataSlice = append(errDataSlice, intPtr)
+
+	//arr
+	arr := []int{1, 1}
+	errDataSlice = append(errDataSlice, arr)
+
+	//slice
+	sli := make([]int, 0)
+	sli = append(sli, 1)
+	errDataSlice = append(errDataSlice, sli)
+
+	//map
+	m := make(map[string]string, 0)
+	m["hello"] = "world"
+	errDataSlice = append(errDataSlice, m)
+	//chan
+	ch := make(chan int, 1)
+	errDataSlice = append(errDataSlice, ch)
+	//func
+	f := func() {}
+	errDataSlice = append(errDataSlice, f)
+
+	//todo: example for kind below
+	//interace
+	//Ptr
+	//Struct
+	//UnsafePointer
+
 }
 
 func setupCorrectTestingData() {
