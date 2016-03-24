@@ -14,6 +14,19 @@ func (ipe *InvalidPrimitiveError) Error() string {
 	return fmt.Sprintf("invalid primitive type (%s)", ipe.typ.String())
 }
 
+// func IsPrimitive(typ reflect.Type) bool {
+// 	switch typ.Kind() {
+// 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+// 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+// 	case reflect.Bool:
+// 	case reflect.Float32:
+// 	case reflect.Float64:
+// 	case reflect.String:
+// 		return true
+// 	}
+// 	return false
+// }
+
 //todo:improve complex
 //except complex64 and complex 128
 func ParsePrimitive(typ reflect.Type, val string) (interface{}, error) {
@@ -23,9 +36,6 @@ func ParsePrimitive(typ reflect.Type, val string) (interface{}, error) {
 	switch typ.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 
-		if val == "" {
-			val = "0"
-		}
 		intVal, err := strconv.ParseInt(val, 10, 64)
 		if err != nil {
 			return nil, err
@@ -34,9 +44,6 @@ func ParsePrimitive(typ reflect.Type, val string) (interface{}, error) {
 		return value.Interface(), nil
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 
-		if val == "" {
-			val = "0"
-		}
 		uintVal, err := strconv.ParseUint(val, 10, 64)
 		if err != nil {
 			return nil, err
@@ -45,9 +52,6 @@ func ParsePrimitive(typ reflect.Type, val string) (interface{}, error) {
 		return value.Interface(), nil
 	case reflect.Bool:
 
-		if val == "" {
-			val = "false"
-		}
 		boolVal, err := strconv.ParseBool(val)
 		if err != nil {
 			return nil, err
@@ -57,9 +61,6 @@ func ParsePrimitive(typ reflect.Type, val string) (interface{}, error) {
 		return value.Interface(), nil
 	case reflect.Float32:
 
-		if val == "" {
-			val = "0.0"
-		}
 		floatVal, err := strconv.ParseFloat(val, 32)
 		if err != nil {
 			return nil, err
@@ -68,9 +69,6 @@ func ParsePrimitive(typ reflect.Type, val string) (interface{}, error) {
 		return value.Interface(), nil
 	case reflect.Float64:
 
-		if val == "" {
-			val = "0.0"
-		}
 		floatVal, err := strconv.ParseFloat(val, 64)
 		if err != nil {
 			return nil, err

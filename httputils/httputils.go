@@ -1,14 +1,22 @@
 package httputils
 
 import (
+	"encoding/json"
 	"errors"
+
+	"mime/multipart"
 	"net/http"
 	"reflect"
 	"strings"
 )
 
+import (
+	"github.com/xozrc/pkg/reflectutils"
+)
+
 const (
-	formKey string = "form"
+	formKey   string = "form"
+	maxMemory        = int64(1024 * 1024 * 10)
 )
 
 func Bind(req *http.Request, obj interface{}) error {
@@ -19,11 +27,26 @@ func Bind(req *http.Request, obj interface{}) error {
 	contentType := req.Header.Get("Content-Type")
 
 	if strings.Contains(contentType, "form-urlencoded") {
-		return BindForm(req, obj)
+		err := req.ParseForm()
+		if err != nil {
+			return err
+		}
+
+		return BindForm(obj, req.Form, nil)
+
 	} else if strings.Contains(contentType, "multipart/form-data") {
+		err := req.ParseMultipartForm(maxMemory)
+		if err != nil {
+			return err
+		}
+		return BindForm(obj, req.Form, req.MultipartForm.File)
 
 	} else if strings.Contains(contentType, "application/json") {
-		return JsonForm(req, obj)
+		err := json.NewDecoder(req.Body).Decode(obj)
+		if err != nil {
+			return err
+		}
+		return nil
 	} else {
 		if contentType == "" {
 			return errors.New("empty Content-Type")
@@ -35,18 +58,10 @@ func Bind(req *http.Request, obj interface{}) error {
 	return nil
 }
 
-func BindForm(req *http.Request, form interface{}) error {
-	err := req.ParseForm()
-	if err != nil {
-		return err
-	}
-	mapForm(form, req.Form, nil)
-
-}
-
-func mapForm(form interface{}, form map[string][]string) (err error) {
+func BindForm(form interface{}, mapVal map[string][]string, fileMap map[string][]*multipart.FileHeader) (err error) {
 
 	formVal := reflect.ValueOf(form)
+
 	typ := reflect.TypeOf(form)
 
 	if formVal.Kind() != reflect.Ptr || formVal.IsNil() {
@@ -54,170 +69,50 @@ func mapForm(form interface{}, form map[string][]string) (err error) {
 		return
 	}
 
+	typ = typ.Elem()
+	formVal = formVal.Elem()
+
 	for i := 0; i < typ.NumField(); i++ {
 		fieldType := typ.Field(i)
 		fieldVal := formVal.Field(i)
+
 		if tagName := fieldType.Tag.Get(formKey); tagName != "" {
 			if !fieldVal.CanSet() {
 				continue
 			}
 
 			var tagVal []string
-			if tagVal, ok := form[tagName]; !ok {
-				if tagVal, ok = formfile[tagName]; !ok {
-					continue
-				}
-			}
-
-			if len(tagVal) == 0 {
-				fieldVal.Set(reflect.Zero(fieldType))
+			tagVal, ok := mapVal[tagName]
+			if !ok {
 				continue
 			}
 
-			switch fieldType.Type.Kind() {
-			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-
-				val := tagVal[0]
-				if val == "" {
-					val = "0"
-				}
-				intVal, err := strconv.ParseInt(val, 10, 64)
-				if err != nil {
-					return err
-				}
-				fieldVal.SetInt(intVal)
-
-			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-				val := tagVal[0]
-				if val == "" {
-					val = "0"
-				}
-				uintVal, err := strconv.ParseUint(val, 10, 64)
-				if err != nil {
-					return err
-				}
-				fieldVal.SetUint(uintVal)
-
-			case reflect.Bool:
-				val := tagVal[0]
-				if val == "" {
-					val = "false"
-				}
-				boolVal, err := strconv.ParseBool(val)
-				if err != nil {
-					return err
-				}
-				fieldVal.SetBool(boolVal)
-
-			case reflect.Float32:
-				val := tagVal[0]
-				if val == "" {
-					val = "0.0"
-				}
-				floatVal, err := strconv.ParseFloat(val, 32)
-				if err != nil {
-					return err
-				}
-				fieldVal.SetFloat(floatVal)
-
-			case reflect.Float64:
-				val := tagVal[0]
-				if val == "" {
-					val = "0.0"
-				}
-				floatVal, err := strconv.ParseFloat(val, 64)
-				if err != nil {
-					return err
-				}
-				fieldVal.SetFloat(floatVal)
-
-			case reflect.String:
-				val := tagVal[0]
-				fieldVal.SetString(val)
+			lenOfTagVal := len(tagVal)
+			if lenOfTagVal == 0 {
+				fieldVal.Set(reflect.Zero(fieldType.Type))
+				continue
 			}
 
-		}
-
-		switch fieldType.Type.Kind() {
-		case reflect.Interface:
-		case reflect.Ptr:
-		case reflect.Struct:
-		case reflect.Map:
-		case reflect.Array:
-		case reflect.Slice:
-			return NewInvalidBindFieldError(fieldType.Type)
-			break
-		default:
-			if tagName := fieldType.Tag.Get(formKey); tagName != "" {
-				if !fieldVal.CanSet() {
-					continue
-				}
-				var tagVal
-				if tagVal, ok := form[tagName]; !ok {
-					if tagVal, ok = formfile[tagName]; !ok {
-						continue
+			if fieldType.Type.Kind() == reflect.Slice {
+				tmpSlice := reflect.MakeSlice(fieldType.Type, lenOfTagVal, lenOfTagVal)
+				for j := 0; j < lenOfTagVal; j++ {
+					tempVal, err := reflectutils.ParsePrimitive(fieldType.Type.Elem(), tagVal[j])
+					if err != nil {
+						return err
 					}
+					tmpSlice.Index(j).Set(reflect.ValueOf(tempVal))
 				}
-
+				formVal.Field(i).Set(tmpSlice)
+			} else {
+				tempVal, err := reflectutils.ParsePrimitive(fieldType.Type, tagVal[0])
+				if err != nil {
+					return err
+				}
+				fieldVal.Set(reflect.ValueOf(tempVal))
 			}
-			break
 		}
-		if err != nil {
-			return
-		}
-
 	}
-
-	// for i := 0; i < typ.NumField(); i++ {
-	// 	typeField := typ.Field(i)
-	// 	structField := formStruct.Field(i)
-
-	// 	if typeField.Type.Kind() == reflect.Ptr && typeField.Anonymous {
-	// 		structField.Set(reflect.New(typeField.Type.Elem()))
-	// 		mapForm(structField.Elem(), form, formfile, errors)
-	// 		if reflect.DeepEqual(structField.Elem().Interface(), reflect.Zero(structField.Elem().Type()).Interface()) {
-	// 			structField.Set(reflect.Zero(structField.Type()))
-	// 		}
-	// 	} else if typeField.Type.Kind() == reflect.Struct {
-	// 		mapForm(structField, form, formfile, errors)
-	// 	} else if inputFieldName := typeField.Tag.Get("form"); inputFieldName != "" {
-	// 		if !structField.CanSet() {
-	// 			continue
-	// 		}
-
-	// 		inputValue, exists := form[inputFieldName]
-	// 		if exists {
-	// 			numElems := len(inputValue)
-	// 			if structField.Kind() == reflect.Slice && numElems > 0 {
-	// 				sliceOf := structField.Type().Elem().Kind()
-	// 				slice := reflect.MakeSlice(structField.Type(), numElems, numElems)
-	// 				for i := 0; i < numElems; i++ {
-	// 					setWithProperType(sliceOf, inputValue[i], slice.Index(i), inputFieldName, errors)
-	// 				}
-	// 				formStruct.Field(i).Set(slice)
-	// 			} else {
-	// 				setWithProperType(typeField.Type.Kind(), inputValue[0], structField, inputFieldName, errors)
-	// 			}
-	// 			continue
-	// 		}
-
-	// 		inputFile, exists := formfile[inputFieldName]
-	// 		if !exists {
-	// 			continue
-	// 		}
-	// 		fhType := reflect.TypeOf((*multipart.FileHeader)(nil))
-	// 		numElems := len(inputFile)
-	// 		if structField.Kind() == reflect.Slice && numElems > 0 && structField.Type().Elem() == fhType {
-	// 			slice := reflect.MakeSlice(structField.Type(), numElems, numElems)
-	// 			for i := 0; i < numElems; i++ {
-	// 				slice.Index(i).Set(reflect.ValueOf(inputFile[i]))
-	// 			}
-	// 			structField.Set(slice)
-	// 		} else if structField.Type() == fhType {
-	// 			structField.Set(reflect.ValueOf(inputFile[0]))
-	// 		}
-	// 	}
-	// }
+	return
 }
 
 func WriteJSON(w http.ResponseWriter, code int, v interface{}) error {

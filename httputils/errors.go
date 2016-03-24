@@ -17,9 +17,9 @@ func (ibe *InvalidBindError) Error() string {
 		return "bind(nil)"
 	}
 	if ibe.Type.Kind() != reflect.Ptr {
-		return "bind(non-pointer " + e.Type.String() + ")"
+		return "bind(non-pointer " + ibe.Type.String() + ")"
 	}
-	return "bind(nil " + e.Type.String() + ")"
+	return "bind(nil " + ibe.Type.String() + ")"
 }
 
 func NewInvalidBindFieldError(t reflect.Type) error {
@@ -35,7 +35,7 @@ func (ibfe *InvalidBindFieldError) Error() string {
 		return "bind field(nil)"
 	}
 	if ibfe.Type.Kind() != reflect.Ptr {
-		return "bind field(non-pointer " + e.Type.String() + ")"
+		return "bind field(non-pointer " + ibfe.Type.String() + ")"
 	}
-	return "bind field(nil " + e.Type.String() + ")"
+	return "bind field(nil " + ibfe.Type.String() + ")"
 }

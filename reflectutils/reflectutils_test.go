@@ -22,6 +22,7 @@ func setupTestingData() {
 }
 
 func setupErrTestingData() {
+
 	//pointer
 	intVal := 1
 	intPtr := &intVal
@@ -94,5 +95,9 @@ func TestSetPrimitive(t *testing.T) {
 
 	//parse error
 	_, err := reflectutils.ParsePrimitive(reflect.TypeOf(1), "s")
+	assert.Error(t, err, "parse err data failed")
+
+	//empty string
+	_, err = reflectutils.ParsePrimitive(reflect.TypeOf(1), "")
 	assert.Error(t, err, "parse err data failed")
 }
