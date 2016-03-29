@@ -9,6 +9,7 @@ import (
 	"syscall"
 )
 
+//based on https://github.com/coreos/etcd/tree/master/pkg/osutil
 type InterruptHandler interface {
 	Run()
 }
@@ -23,6 +24,10 @@ type InterruptHooker interface {
 	AddHandler(ih InterruptHandler)
 	Run()
 	RemoveHandler(ih InterruptHandler)
+}
+
+func NewInterruptHooker() InterruptHooker {
+	return &interruptHook{}
 }
 
 type interruptHook struct {
@@ -47,15 +52,13 @@ func (ih *interruptHook) RemoveHandler(h InterruptHandler) {
 
 	}
 
-	began := index + 1
-
 	ih.handlers = append(ih.handlers[:index], ih.handlers[index+1:]...)
 
 	ih.mu.Unlock()
 }
-
 func (ih *interruptHook) Run() {
 	notifier := make(chan os.Signal, 1)
+
 	signal.Notify(notifier, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	//bolck until interrupt signal
 	sig := <-notifier
@@ -70,8 +73,4 @@ func (ih *interruptHook) Run() {
 	ih.mu.Unlock()
 	signal.Stop(notifier)
 
-}
-
-func NewInterruptHooker() InterruptHooker {
-	return &interruptHook{}
 }
