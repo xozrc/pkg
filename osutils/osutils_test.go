@@ -15,7 +15,7 @@ import (
 
 var _ = fmt.Print
 
-var signalSlice []syscall.Signal
+var signalSlice []syscall.Signal = []syscall.Signal{syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT}
 
 var result = 0
 
