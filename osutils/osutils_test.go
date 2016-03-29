@@ -17,7 +17,7 @@ var _ = fmt.Print
 
 var signalSlice []syscall.Signal = []syscall.Signal{syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT}
 
-var result = 0
+var result = 1
 
 func waitSig(t *testing.T, c <-chan os.Signal, sig os.Signal) {
 	select {
@@ -34,7 +34,7 @@ func TestInterruptHookRun(t *testing.T) {
 
 	for _, sig := range signalSlice {
 
-		result = 0
+		result = 1
 		ih := osutils.NewInterruptHooker()
 
 		fir := &first{}
@@ -76,12 +76,12 @@ type second struct {
 }
 
 func (f *second) Run() {
-	result += 1
+	result *= 2
 }
 
 type third struct {
 }
 
 func (f *third) Run() {
-	result += 1
+	result -= 3
 }
