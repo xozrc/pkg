@@ -49,12 +49,15 @@ func TestInterruptHookRun(t *testing.T) {
 		c := make(chan os.Signal, 1)
 		signal.Notify(c, sig)
 
+		done := make(chan struct{}, 1)
 		go func() {
 			ih.Run()
+			done <- struct{}{}
 		}()
 
 		syscall.Kill(syscall.Getpid(), sig)
 		waitSig(t, c, sig)
+		<-done
 		if result == 3 {
 			t.Fatalf("interrupt handlers were called in wrong order")
 		}
