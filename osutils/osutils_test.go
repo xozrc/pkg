@@ -41,10 +41,10 @@ func TestInterruptHookRun(t *testing.T) {
 		sec := &second{}
 		thi := &third{}
 
-		ih.AddHandler(osutils.InterruptHandlerFunc(fir))
-		ih.AddHandler(osutils.InterruptHandlerFunc(sec))
-		ih.AddHandler(osutils.InterruptHandlerFunc(thi))
-		ih.RemoveHandler(osutils.InterruptHandlerFunc(thi))
+		ih.AddHandler(fir)
+		ih.AddHandler(sec)
+		ih.AddHandler(thi)
+		ih.RemoveHandler(thi)
 
 		c := make(chan os.Signal, 1)
 		signal.Notify(c, sig)
