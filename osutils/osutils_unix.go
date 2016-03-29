@@ -46,12 +46,10 @@ func (ih *interruptHook) RemoveHandler(h InterruptHandler) {
 		}
 
 	}
-	end := 0
-	if index > 0 {
-		end = index - 1
-	}
 
-	ih.handlers = append(ih.handlers[:end], ih.handlers[index:]...)
+	began := index + 1
+
+	ih.handlers = append(ih.handlers[:index], ih.handlers[index+1:]...)
 
 	ih.mu.Unlock()
 }
