@@ -37,8 +37,6 @@ func TestInterruptHookRun(t *testing.T) {
 
 		ih.AddHandler(osutils.InterruptHandlerFunc(firstHandler))
 		ih.AddHandler(osutils.InterruptHandlerFunc(secondHandler))
-		ih.AddHandler(osutils.InterruptHandlerFunc(thirdHandler))
-		ih.RemoveHandler(osutils.InterruptHandlerFunc(thirdHandler))
 
 		c := make(chan os.Signal, 1)
 		signal.Notify(c, sig)

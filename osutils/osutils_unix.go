@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"reflect"
 	"sync"
 	"syscall"
 )
@@ -39,9 +40,10 @@ func (ih *interruptHook) RemoveHandler(h InterruptHandler) {
 	ih.mu.Lock()
 	index := 0
 	for i, th := range ih.handlers {
-		if th == h {
+		if reflect.DeepEqual(th, h) {
 			index = i
 		}
+
 	}
 	end := 0
 	if index > 0 {
