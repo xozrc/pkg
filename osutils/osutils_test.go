@@ -33,10 +33,18 @@ func waitSig(t *testing.T, c <-chan os.Signal, sig os.Signal) {
 func TestInterruptHookRun(t *testing.T) {
 
 	for _, sig := range signalSlice {
+
+		result = 0
 		ih := osutils.NewInterruptHooker()
 
-		ih.AddHandler(osutils.InterruptHandlerFunc(firstHandler))
-		ih.AddHandler(osutils.InterruptHandlerFunc(secondHandler))
+		fir := &first{}
+		sec := &second{}
+		thi := &third{}
+
+		ih.AddHandler(osutils.InterruptHandlerFunc(fir))
+		ih.AddHandler(osutils.InterruptHandlerFunc(sec))
+		ih.AddHandler(osutils.InterruptHandlerFunc(thi))
+		ih.RemoveHandler(osutils.InterruptHandlerFunc(thi))
 
 		c := make(chan os.Signal, 1)
 		signal.Notify(c, sig)
@@ -53,17 +61,27 @@ func TestInterruptHookRun(t *testing.T) {
 		if result != 4 {
 			t.Fatalf("interrupt handlers were not called properly")
 		}
+
 	}
 }
 
-func firstHandler() {
+type first struct {
+}
+
+func (f *first) Run() {
 	result += 1
 }
 
-func secondHandler() {
-	result *= 2
+type second struct {
 }
 
-func thirdHandler() {
-	result -= 1
+func (f *second) Run() {
+	result += 1
+}
+
+type third struct {
+}
+
+func (f *third) Run() {
+	result += 1
 }

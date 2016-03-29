@@ -36,6 +36,7 @@ func (ih *interruptHook) AddHandler(h InterruptHandler) {
 	ih.mu.Unlock()
 }
 
+//tip:func handler can not be remove,cause cannot compare func
 func (ih *interruptHook) RemoveHandler(h InterruptHandler) {
 	ih.mu.Lock()
 	index := 0
