@@ -55,7 +55,7 @@ func Bind(req *http.Request, obj interface{}) error {
 		}
 
 	}
-	return nil
+
 }
 
 func BindForm(form interface{}, mapVal map[string][]string, fileMap map[string][]*multipart.FileHeader) (err error) {
